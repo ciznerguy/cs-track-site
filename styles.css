@@ -55,6 +55,13 @@ footer { position: relative; z-index: 1; }
   font-size: 20px;
   font-weight: 800;
 }
+.nav-logo-sub {
+  font-family: 'Assistant', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
 .nav-links {
   display: flex;
   gap: 10px;
