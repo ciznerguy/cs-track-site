@@ -278,6 +278,33 @@ section { padding: 40px 0; }
 .cta-banner p { font-size: 14px; color: #fbdccc; margin: 0; }
 .cta-banner .btn { background: var(--ink); color: var(--yellow); white-space: nowrap; }
 
+/* CONTACT FORM */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+  margin-top: 22px;
+}
+.contact-form input,
+.contact-form textarea {
+  font-family: 'Assistant', sans-serif;
+  font-size: 14px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  resize: vertical;
+}
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.contact-form textarea { min-height: 110px; }
+.contact-form button { align-self: flex-start; }
+
 /* FOOTER */
 footer {
   background: var(--ink);

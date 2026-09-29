@@ -20,7 +20,7 @@
         <a class="navlink" href="prospective.html">שוקלים להצטרף</a>
         <a class="navlink" href="students.html">חומרי לימוד</a>
         <a class="navlink" href="links.html">קישורים</a>
-        <a class="navlink" href="mailto:ciznerguy@taded.org.il">צור קשר</a>
+        <a class="navlink" href="#contact">צור קשר</a>
       </div>
     </nav>
 
@@ -95,8 +95,18 @@
 
     <section id="contact">
       <h2 class="section-title">צור קשר</h2>
-      <p style="max-width:480px; color:var(--ink-soft); line-height:1.6;">שאלות על המגמה? על ההרשמה? אפשר לפנות בכל עת.</p>
-      <p style="font-family:'Rubik',sans-serif; font-weight:700;"><a href="mailto:ciznerguy@taded.org.il">ciznerguy@taded.org.il</a></p>
+      <p style="max-width:480px; color:var(--ink-soft); line-height:1.6;">שאלות על המגמה? על ההרשמה? אפשר לפנות בכל עת — הטופס נשלח ישירות אליי.</p>
+      <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you.html">
+        <input type="hidden" name="form-name" value="contact">
+        <p style="display:none;">
+          <label>אל תמלאו שדה זה: <input name="bot-field"></label>
+        </p>
+        <input type="text" name="name" placeholder="שם" required>
+        <input type="email" name="email" placeholder="אימייל לחזרה" required>
+        <textarea name="message" placeholder="הודעה" required></textarea>
+        <button type="submit" class="btn btn-primary">שליחה</button>
+      </form>
+      <p style="font-family:'Rubik',sans-serif; font-weight:700; margin-top:18px;">או ישירות במייל: <a href="mailto:ciznerguy@taded.org.il">ciznerguy@taded.org.il</a></p>
     </section>
   </div>
 
