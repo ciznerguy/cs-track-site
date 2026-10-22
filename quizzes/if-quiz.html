@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מבדק – ביצוע מותנה בשפת C#</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--muted:#5d6675;--line:#dfe3ea;--accent:#2f5bd3;--ok:#1d7a46;--okbg:#e6f4ec;--bad:#b3261e;--badbg:#fbeaea;--code:#f1f3f7}
+@media (prefers-color-scheme: dark){:root{--bg:#14161b;--card:#1d2027;--ink:#e7e9ee;--muted:#a0a7b4;--line:#323743;--accent:#7a9cff;--ok:#5fd093;--okbg:#17301f;--bad:#ff8a80;--badbg:#3a1c1c;--code:#262a33}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Arial,sans-serif;line-height:1.6}
+.wrap{max-width:820px;margin:0 auto;padding:24px 16px 80px}
+h1{font-size:1.6rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.top{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
+.top label{display:block;font-weight:600;margin-bottom:6px}
+.top input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:1rem}
+.progress{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>div{height:100%;width:0;background:var(--accent);transition:width .2s}
+.ptxt{font-size:.9rem;color:var(--muted);margin-top:4px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.q h3{margin:0 0 8px;font-size:1.02rem;font-weight:600}
+.qn{color:var(--accent);font-weight:700;margin-left:6px}
+pre{direction:ltr;text-align:left;background:var(--code);border-radius:8px;padding:10px 12px;overflow-x:auto;font-size:.92rem;margin:8px 0 10px}
+.c{font-family:Consolas,"Courier New",monospace;unicode-bidi:isolate;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.93em;white-space:pre}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin-top:6px}
+.opt.right{background:var(--okbg);border-color:var(--ok)}
+.opt.wrong{background:var(--badbg);border-color:var(--bad)}
+.exp{display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);font-size:.95rem}
+.done .exp{display:block}
+.tag{font-size:.8rem;color:var(--muted);margin-top:6px}
+button{font-size:1.05rem;padding:10px 22px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+button.sec{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+#result{display:none;background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:18px;margin-bottom:20px}
+.score{font-size:2.4rem;font-weight:700;margin:0}
+.topic{border-top:1px solid var(--line);padding:10px 0}
+.topic b{display:block}
+.topic .st{font-size:.9rem;color:var(--muted)}
+.good{color:var(--ok)}.weak{color:var(--bad)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.warn{color:var(--bad);margin-top:8px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>מבדק: ביצוע מותנה בשפת C#</h1>
+  <p class="sub">ביטויים בוליאניים · תנאי פשוט · תנאי מורכב &nbsp;|&nbsp; 30 שאלות אמריקאיות &nbsp;|&nbsp; לפי "יסודות מדעי המחשב 1", פרק 5, סעיפים 5.1–5.2</p>
+
+  <div class="top">
+    <label for="sname">שם התלמיד/ה</label>
+    <input id="sname" type="text" autocomplete="off" placeholder="הקלידו את שמכם">
+  </div>
+
+  <div id="result"></div>
+
+  <div class="progress"><div class="bar"><div id="pbar"></div></div><div class="ptxt" id="ptxt">נענו 0 מתוך 30</div></div>
+
+  <form id="quiz"></form>
+
+  <div class="actions">
+    <button type="button" id="submit">הגשה וקבלת ציון</button>
+    <button type="button" class="sec" id="reset">התחלה מחדש</button>
+  </div>
+  <div class="warn" id="warn"></div>
+</div>
+
+<script>
+const TOPICS = {
+  bool:  {name:"ביטויים בוליאניים וסימני השוואה", ref:"סעיף 5.1 – אחרי פתרון בעיה 1: ערך של ביטוי בוליאני, טבלת סימני ההשוואה, ההבדל בין == ל-="},
+  simple:{name:"תנאי פשוט: if...else ו-if בלבד", ref:"סעיף 5.1 – בעיות 1–3 (פלינדרום, חלליות, שש אש), מבנה משפט if, תחום ה-if ותחום ה-else, קלטים מייצגים"},
+  chars: {name:"ביטויים בוליאניים עם תווים", ref:"סעיף 5.1 – בעיה 4 (האות העוקבת מעגלית) והחלק \"ביטויים בוליאניים הכוללים תווים\""},
+  and:   {name:"תנאי מורכב: הקשר וגם (&&)", ref:"סעיף 5.2 – בעיה 5 (סדרה עולה ממש) וטבלת האמת של וגם"},
+  or:    {name:"תנאי מורכב: הקשר או (||)", ref:"סעיף 5.2 – בעיה 6 (מספרים מאותן ספרות) וטבלת האמת של או"},
+  mixed: {name:"תנאים מורכבים מעורבים וקדימות", ref:"סעיף 5.2 – \"תנאים מורכבים מעורבים\": הקשר && קודם לקשר ||"}
+};
+
+// t = question text, e = explanation (`...` marks code), pre = code block, o = options, code = options are code, a = index of correct option
+const Q = [
+{tp:"bool", t:"מהו הערך שיכול להתקבל מחישוב של ביטוי בוליאני?",
+ o:["מספר שלם כלשהו","אחד משני ערכים: true או false","כל ערך מאותו טיפוס של המשתנים שבביטוי","תו (char)"], a:1,
+ e:"ערכו של ביטוי בוליאני יכול להיות אחד משניים בלבד: `true` (אמת) או `false` (שקר)."},
+{tp:"bool", t:"באיזה סימן בודקים ב-C# אם שני ערכים שווים זה לזה?",
+ o:["=","==","===","=>"], code:true, a:1,
+ e:"השוואה נכתבת עם `==` (שני סימני שוויון). הסימן `=` שמור להשמה."},
+{tp:"bool", t:"ערכי המשתנים: `a = 1`, `b = 2`. מה ערכו של הביטוי הבא?", pre:"2 * a <= b",
+ o:["true","false","שגיאת קומפילציה","2"], a:0,
+ e:"`2 * 1 = 2`, והביטוי `2 <= 2` מתקיים, כי \"קטן או שווה\" כולל גם את המקרה של שוויון."},
+{tp:"bool", t:"ערכי המשתנים: `a = 1`, `b = 2`. מה ערכו של הביטוי הבא?", pre:"2 * a != b",
+ o:["true","false","1","שגיאת קומפילציה"], a:1,
+ e:"`2 * 1 = 2`, ו-2 שווה לערכו של `b`. לכן \"שונה\" אינו מתקיים, וערך הביטוי `false`."},
+{tp:"mixed", t:"עבור איזה ערך של `num` ערכו של הביטוי הבא הוא true?", pre:"((num != 0) && (num >= 8)) || (num == 3)",
+ o:["0","5","7","3"], a:3,
+ e:"עבור 3: החלק השמאלי `false` (3 אינו גדול או שווה ל-8), אבל `num == 3` הוא `true`, ו-`false || true` נותן `true`. עבור 0, 5 ו-7 שני הצדדים `false`."},
+{tp:"bool", t:"איך כותבים ב-C# את התנאי \"ערך המשתנה a שונה מערך המשתנה b\"?",
+ o:["a <> b","a =! b","a != b","a ≠ b"], code:true, a:2,
+ e:"סימן \"שונה\" ב-C# הוא `!=` (סימן קריאה ואחריו שוויון)."},
+{tp:"bool", t:"איך כותבים ב-C# את התנאי \"סכום ערכי a ו-b קטן או שווה ל-10\"?",
+ o:["(a + b) =< 10","(a + b) <= 10","(a + b) ≤ 10","(a + b) < 10"], code:true, a:1,
+ e:"סימן \"קטן או שווה\" הוא `<=` (קודם הקטן, אחריו השוויון). הצירוף `=<` אינו חוקי, ו-`<` לבדו לא כולל את 10."},
+{tp:"simple", t:"נתון קטע מתוכנית הפלינדרום. מה יודפס עבור הקלט 366?", pre:"units = num % 10;\nhundreds = num / 100;\nif (units == hundreds)\n    Console.WriteLine(\"{0} is a palindrome\", num);\nelse\n    Console.WriteLine(\"{0} is not a palindrome\", num);",
+ o:["366 is a palindrome","366 is not a palindrome","לא יודפס דבר","יודפסו שתי ההודעות"], a:1,
+ e:"`units = 6` ו-`hundreds = 3`. התנאי `6 == 3` הוא `false`, ולכן מתבצע תחום ה-else."},
+{tp:"simple", t:"מה יודפס עבור `studentsNum = 130` ו-`seatsPerShip = 40`?", pre:"shipsNum = studentsNum / seatsPerShip;\nleftoverNum = studentsNum % seatsPerShip;\nif (leftoverNum > 0)\n    shipsNum = shipsNum + 1;\nConsole.WriteLine(\"The number of spaceships is {0}\", shipsNum);",
+ o:["3","4","10","3.25"], a:1,
+ e:"`130 / 40` נותן 3 (חילוק שלמים), ו-`130 % 40` נותן 10. התנאי `10 > 0` מתקיים, ולכן `shipsNum` גדל ל-4."},
+{tp:"simple", t:"בודקים את תוכנית החלליות שבשאלה הקודמת. אילו קלטים מתאימים לבדיקה (קלטים מייצגים)?",
+ o:["מספיק קלט אחד שבו התנאי מתקיים","מספיק קלט אחד שבו התנאי אינו מתקיים","קלט שבו התנאי מתקיים (למשל 120 ו-50) וגם קלט שבו אינו מתקיים (למשל 120 ו-40)","יש לבדוק את כל הקלטים האפשריים"], a:2,
+ e:"יש לבדוק גם מקרה שבו ערך הביטוי הבוליאני `true` וגם מקרה שבו הוא `false`, כי מקרה אחד אינו מעיד על האחר."},
+{tp:"simple", t:"מה יהיה ערכו של `max` בסוף הקטע, עבור `a = 40` ו-`b = 70`?", pre:"max = a;\nif (b > a)\n    max = b;",
+ o:["40","70","110","הערך לא מוגדר, כי אין else"], a:1,
+ e:"קודם `max = 40`. התנאי `70 > 40` מתקיים, ולכן `max = 70`. הקטע שם ב-max את הגדול מבין השניים."},
+{tp:"simple", t:"מה קורה במשפט if ללא else (מבנה \"אם...\") כאשר התנאי אינו מתקיים?",
+ o:["מתרחשת שגיאה בזמן ריצה","ההוראות בתחום ה-if מתבצעות בכל זאת","לא מתבצעות ההוראות שבתחום ה-if, והתוכנית ממשיכה להוראה שאחרי משפט ה-if","התוכנית מסתיימת"], a:2,
+ e:"במבנה \"אם...\" ההוראות מתבצעות רק אם התנאי מתקיים. אחרת לא מתבצע דבר, והביצוע ממשיך הלאה."},
+{tp:"simple", t:"מתי מותר להשמיט את הסוגריים המסולסלים { } של תחום ה-if או של תחום ה-else?",
+ o:["תמיד","כאשר יש בתחום הוראה אחת בלבד","רק כאשר אין else","אף פעם"], a:1,
+ e:"כשיש בתחום הוראה אחת בלבד אפשר להשמיט את הסוגריים. כשיש יותר מהוראה אחת, הם חובה."},
+{tp:"simple", t:"תוכנית \"שש אש\". מה יודפס עבור הקלט 10?", pre:"if (num % 6 == 0)\n{\n    sum = num * 6;\n    Console.WriteLine(\"* You won {0} shekels *\", sum);\n}\nelse\n{\n    sum = num * 10;\n    Console.WriteLine(\"* You lost {0} shekels *\", sum);\n}",
+ o:["* You won 60 shekels *","* You lost 100 shekels *","* You won 100 shekels *","* You lost 60 shekels *"], code:true, a:1,
+ e:"`10 % 6` נותן 4, והתנאי `4 == 0` הוא `false`. לכן מתבצע תחום ה-else: `sum = 10 * 10 = 100`."},
+{tp:"simple", t:"המטרה: להדפיס קודם את הגדול מבין x ו-y ואחריו את הקטן. איזה תנאי צריך להופיע בסוגריים?", pre:"if ( ______ )\n{\n    temp = x;\n    x = y;\n    y = temp;\n}\nConsole.WriteLine(\"{0} {1}\", x, y);",
+ o:["x > y","x < y","x == y","x != y"], code:true, a:1,
+ e:"מחליפים בין הערכים רק כאשר x קטן מ-y. אחרי ההחלפה x מכיל את הגדול."},
+{tp:"bool", t:"התלמיד כתב `if (a = 5)` כש-a מטיפוס int. מה הבעיה?",
+ o:["אין בעיה, זה בודק אם a שווה 5","הסימן = הוא השמה. כדי להשוות צריך ==","חסר else","צריך לכתוב 5 = a"], a:1,
+ e:"ב-C# הסימן `=` משמש להשמה בלבד. בתוך תנאי משווים עם `==`, ולכן התנאי הנכון הוא `a == 5`."},
+{tp:"chars", t:"תוכנית האות העוקבת מעגלית. מה יודפס עבור הקלט 'Z'?", pre:"if (letter == 'Z')\n{\n    nextLetter = 'A';\n    Console.WriteLine(\"Back to start: {0}\", nextLetter);\n}\nelse\n{\n    nextLetter = (char)(letter + 1);\n    Console.WriteLine(\"The next letter is: {0}\", nextLetter);\n}",
+ o:["The next letter is: [","The next letter is: A","Back to start: A","Back to start: Z"], code:true, a:2,
+ e:"התנאי `letter == 'Z'` מתקיים, ולכן `nextLetter = 'A'` ומודפסת ההודעה Back to start."},
+{tp:"chars", t:"הקלט הוא ספרה (char) בין '0' ל-'9'. עבור איזה קלט יודפס 8?", pre:"if (digit == '0')\n    x = '9';\nelse\n    x = (char)(digit - 1);\nConsole.WriteLine(x);",
+ o:["'7'","'8'","'9'","'0'"], code:true, a:2,
+ e:"עבור `'9'` התנאי `false`, ו-x מקבל את התו שלפני `'9'`, כלומר `'8'`. עבור `'0'` יודפס 9."},
+{tp:"chars", t:"ערכי המשתנים מטיפוס char: `let1 = 'E'`, `let2 = 'T'`. איזה מהביטויים ערכו false?",
+ o:["'A' < 'B'","'7' > '3'","let1 <= let2","let2 < 'E'"], code:true, a:3,
+ e:"תווים מושווים לפי סדרם. `'T'` מופיע אחרי `'E'`, ולכן `let2 < 'E'` הוא `false`. שאר הביטויים `true`."},
+{tp:"and", t:"מתי ערכו של ביטוי מהצורה `(ביטוי1) && (ביטוי2)` הוא true?",
+ o:["כאשר לפחות אחד מהביטויים true","רק כאשר שני הביטויים true","כאשר שני הביטויים false","כאשר בדיוק אחד מהם true"], a:1,
+ e:"לפי טבלת האמת של \"וגם\": התוצאה `true` רק כששני הביטויים `true`. בכל מקרה אחר `false`."},
+{tp:"and", t:"עבור הקלט `num1 = 1, num2 = 1, num3 = 2`, מה ערכו של הביטוי?", pre:"(num3 > num2) && (num2 > num1)",
+ o:["true, כי num3 > num2","false, כי num2 > num1 הוא false","true, כי הסדרה לא יורדת","false, כי שני החלקים false"], a:1,
+ e:"`num3 > num2` הוא `2 > 1`, כלומר `true`. `num2 > num1` הוא `1 > 1`, כלומר `false`. ו-`true && false` נותן `false`."},
+{tp:"and", t:"מדוע הכתיבה `if (num3 > num2 > num1)` לא נכונה ב-C#?",
+ o:["היא חוקית ושקולה ל-(num3 > num2) && (num2 > num1)","היא אינה חוקית. יש לכתוב שני תנאים ולקשר ביניהם: (num3 > num2) && (num2 > num1)","היא אינה חוקית. יש לכתוב (num3 > num2) || (num2 > num1)","היא חוקית רק במשתנים מטיפוס double"], a:1,
+ e:"שרשור השוואות כמו במתמטיקה אינו חוקי ב-C#. יש לפרק לשני ביטויים פשוטים ולקשר אותם ב-`&&`."},
+{tp:"and", t:"איזה ביטוי מבטא \"ערכו של x גדול מ-0 וקטן מ-50\"?",
+ o:["0 < x < 50","(x > 0) || (x < 50)","(x > 0) && (x < 50)","(x >= 0) && (x <= 50)"], code:true, a:2,
+ e:"שני התנאים צריכים להתקיים יחד, ולכן מקשרים ב-`&&`. הביטוי עם `||` מתקיים לכל x, והאפשרות האחרונה כוללת גם את 0 ואת 50."},
+{tp:"and", t:"איזה ביטוי מבטא \"ערכו של let אינו התו 'a' ואינו התו 'z'\"?",
+ o:["(let != 'a') || (let != 'z')","(let != 'a') && (let != 'z')","(let == 'a') && (let == 'z')","let != 'a' && 'z'"], code:true, a:1,
+ e:"צריך ששני התנאים יתקיימו יחד, ולכן `&&`. הביטוי עם `||` תמיד `true`, כי כל תו שונה לפחות מאחד מהשניים."},
+{tp:"and", t:"עבור איזה ערך של `num` ערכו של הביטוי הבא הוא true?", pre:"(num > 2) && ((num % 2) == 0)",
+ o:["2","3","4","7"], a:2,
+ e:"צריך ש-num יהיה גדול מ-2 וגם זוגי. 4 מקיים את שניהם. 2 אינו גדול מ-2, ו-3 ו-7 אינם זוגיים."},
+{tp:"or", t:"מתי ערכו של ביטוי מהצורה `(ביטוי1) || (ביטוי2)` הוא false?",
+ o:["כאשר אחד הביטויים false","רק כאשר שני הביטויים false","כאשר שני הביטויים true","אף פעם"], a:1,
+ e:"לפי טבלת האמת של \"או\": התוצאה `true` אם לפחות אחד מהם `true`. רק כששניהם `false`, התוצאה `false`."},
+{tp:"or", t:"תוכנית DigitEquality: `num1 = 25`, ולכן `invNum1 = 52`. עבור `num2 = 52`, מה ערכי הביטויים?", pre:"(num1 == num2) || (num2 == invNum1)",
+ o:["שמאלי false, ימני false, מורכב false","שמאלי false, ימני true, מורכב true","שמאלי true, ימני true, מורכב true","שמאלי false, ימני true, מורכב false"], a:1,
+ e:"`25 == 52` הוא `false`, ו-`52 == 52` הוא `true`. `false || true` נותן `true`, ויודפס שהמספרים מורכבים מאותן ספרות."},
+{tp:"or", t:"איזה ביטוי מבטא \"ערכו של x קטן מ-1 או גדול מ-7\"?",
+ o:["(x < 1) && (x > 7)","(x < 1) || (x > 7)","(x > 1) || (x < 7)","1 > x > 7"], code:true, a:1,
+ e:"מספיק שאחד התנאים יתקיים, ולכן `||`. הביטוי עם `&&` לעולם לא מתקיים, כי אין מספר שקטן מ-1 וגם גדול מ-7."},
+{tp:"and", t:"num הוא מספר שלם. לאיזה ביטוי פשוט שקול הביטוי הבא?", pre:"(num > -1) && (num < 1)",
+ o:["num != 0","num == 1","num == 0","num > 0"], code:true, a:2,
+ e:"המספר השלם היחיד שגדול מ-`-1` וקטן מ-`1` הוא `0`."},
+{tp:"mixed", t:"(מבגרות 2003) מה ערך הביטוי עבור `x = -2`, `y = 5`, `z = 13`?", pre:"(z > x) || (x < 0) && (z - y > 9)",
+ o:["true","false","שגיאת קומפילציה","תלוי בסדר הכתיבה בלבד"], a:0,
+ e:"הקשר `&&` קודם לקשר `||`. קודם מחשבים: `(x < 0)` הוא `true`, ו-`(z - y > 9)` הוא `8 > 9`, כלומר `false`. לכן `true && false` נותן `false`. אחר כך `(z > x)` הוא `13 > -2`, כלומר `true`, ו-`true || false` נותן `true`."}
+];
+
+// shuffle options so the correct answer's position varies
+Q.forEach(q=>{
+  const idx=q.o.map((_,j)=>j);
+  for(let k=idx.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[idx[k],idx[r]]=[idx[r],idx[k]];}
+  q.o=idx.map(j=>q.o[j]); q.a=idx.indexOf(q.a);
+});
+
+const form=document.getElementById('quiz');
+function rich(el,s){
+  s.split('`').forEach((part,i)=>{
+    if(i%2){const c=document.createElement('span');c.className='c';c.dir='ltr';c.textContent=part;el.appendChild(c);}
+    else el.appendChild(document.createTextNode(part));
+  });
+}
+Q.forEach((q,i)=>{
+  const d=document.createElement('div');d.className='q';d.id='q'+i;
+  const h=document.createElement('h3');
+  const n=document.createElement('span');n.className='qn';n.textContent=(i+1)+'.';
+  h.appendChild(n);rich(h,q.t);d.appendChild(h);
+  if(q.pre){const p=document.createElement('pre');p.textContent=q.pre;d.appendChild(p);}
+  q.o.forEach((op,j)=>{
+    const l=document.createElement('label');l.className='opt';
+    const r=document.createElement('input');r.type='radio';r.name='q'+i;r.value=j;
+    r.addEventListener('change',upd);
+    const s=document.createElement('span');
+    if(q.code){s.className='c';s.dir='ltr';}
+    s.textContent=op;
+    l.appendChild(r);l.appendChild(s);d.appendChild(l);
+  });
+  const ex=document.createElement('div');ex.className='exp';d.appendChild(ex);
+  const tg=document.createElement('div');tg.className='tag';tg.textContent='נושא: '+TOPICS[q.tp].name;d.appendChild(tg);
+  form.appendChild(d);
+});
+function answered(){return Q.filter((q,i)=>form.querySelector('input[name=q'+i+']:checked')).length;}
+function upd(){const a=answered();document.getElementById('pbar').style.width=(a/Q.length*100)+'%';document.getElementById('ptxt').textContent='נענו '+a+' מתוך '+Q.length;}
+
+let submitted=false;
+document.getElementById('submit').addEventListener('click',()=>{
+  if(submitted) return;
+  const miss=Q.length-answered(), w=document.getElementById('warn');
+  if(miss>0 && !w.dataset.confirmed){
+    w.style.display='block';
+    w.textContent='לא ענית על '+miss+' שאלות. שאלה שלא נענתה נספרת כשגויה. כדי להגיש בכל זאת, לחצו שוב על "הגשה".';
+    w.dataset.confirmed='1';return;
+  }
+  w.style.display='none';submitted=true;
+  let correct=0;const stat={};
+  Object.keys(TOPICS).forEach(k=>stat[k]={ok:0,all:0,wrong:[]});
+  Q.forEach((q,i)=>{
+    const box=document.getElementById('q'+i);box.classList.add('done');
+    const sel=form.querySelector('input[name=q'+i+']:checked');
+    const opts=box.querySelectorAll('.opt');
+    opts.forEach(o=>o.querySelector('input').disabled=true);
+    opts[q.a].classList.add('right');
+    const ok=!!sel && +sel.value===q.a;
+    if(sel && !ok) opts[+sel.value].classList.add('wrong');
+    stat[q.tp].all++; if(ok){stat[q.tp].ok++;correct++;} else stat[q.tp].wrong.push(i+1);
+    const ex=box.querySelector('.exp');
+    ex.textContent=ok?'✔ נכון. ':(sel?'✘ לא נכון. ':'✘ לא נענתה. ');
+    rich(ex,q.e);
+  });
+  const grade=Math.round(correct/Q.length*100);
+  const R=document.getElementById('result');R.innerHTML='';
+  const nm=document.getElementById('sname').value.trim();
+  const h=document.createElement('p');h.textContent=(nm?nm+' – ':'')+'הציון שלך:';R.appendChild(h);
+  const s=document.createElement('p');s.className='score';s.textContent=grade;R.appendChild(s);
+  const s2=document.createElement('p');s2.textContent=correct+' תשובות נכונות מתוך '+Q.length;R.appendChild(s2);
+  const weak=Object.keys(stat).filter(k=>stat[k].all && stat[k].ok/stat[k].all<0.8);
+  const msg=document.createElement('p');msg.style.fontWeight='600';
+  msg.textContent=weak.length===0?'שליטה טובה בכל הנושאים. כדאי לעבור על ההסברים בשאלות שבהן טעית.':'מומלץ לחזור על הנושאים המסומנים באדום:';
+  R.appendChild(msg);
+  Object.keys(stat).forEach(k=>{
+    const t=stat[k];if(!t.all)return;
+    const d=document.createElement('div');d.className='topic';
+    const b=document.createElement('b');b.className=(t.ok/t.all<0.8)?'weak':'good';
+    b.textContent=TOPICS[k].name+' – '+t.ok+'/'+t.all;d.appendChild(b);
+    if(t.ok/t.all<0.8){
+      const r=document.createElement('div');r.className='st';
+      r.textContent='לחזור על: '+TOPICS[k].ref+'. שאלות שגויות: '+t.wrong.join(', ');d.appendChild(r);
+    }
+    R.appendChild(d);
+  });
+  R.style.display='block';window.scrollTo({top:R.offsetTop-10,behavior:'smooth'});
+});
+document.getElementById('reset').addEventListener('click',()=>location.reload());
+</script>
+</body>
+</html>
